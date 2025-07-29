@@ -1,11 +1,17 @@
 // Record Offset is the row to start with, starting at 1
-function sendMailMerge(subjectQuery, recipientsColumn, filterValue = false, uniqueColumn = false, recordOffset = 1) {
+function sendMailMerge(
+  subjectQuery,
+  recipientsColumn,
+  filterValue = false,
+  uniqueColumn = false,
+  recordOffset = 0
+) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const data = sheet.getDataRange().getValues();
   const headers = data[0];
 
-  const filterColumnName = "Status";        // <-- customize this if needed
-  const uniqueColumnName = "GL Email";  // <-- only one email per value in this column
+  const filterColumnName = "Status"; // <-- customize this if needed
+  const uniqueColumnName = "GL Email"; // <-- only one email per value in this column
 
   const filterColumnIndex = headers.indexOf(filterColumnName);
   const uniqueColumnIndex = headers.indexOf(uniqueColumnName);
@@ -43,26 +49,29 @@ function sendMailMerge(subjectQuery, recipientsColumn, filterValue = false, uniq
   const seen = new Set();
 
   for (let i = recordOffset + 1; i < data.length; i++) {
-    const isHidden = sheet.isRowHiddenByFilter(i + 1) || sheet.isRowHiddenByUser(i + 1);
+    const isHidden =
+      sheet.isRowHiddenByFilter(i + 1) || sheet.isRowHiddenByUser(i + 1);
     if (isHidden) {
-      Logger.log("Skipping hidden " + data[i])
-      continue
-    };
+      Logger.log("Skipping hidden " + data[i]);
+      continue;
+    }
 
     const row = data[i];
 
     if (filterValue && row[filterColumnIndex] !== filterValue) {
-      Logger.log(`Skipping filtered for ${filterValue}. Value: ` + row[filterColumnIndex])
-      continue
-    };
+      Logger.log(
+        `Skipping filtered for ${filterValue}. Value: ` + row[filterColumnIndex]
+      );
+      continue;
+    }
 
     const uniqueValue = row[uniqueColumnIndex];
-  // Logger.log("seen " + Array.from(seen).join(", "))
-  // Logger.log("uniqueValue " + uniqueValue)
-  // Logger.log("seen.has(uniqueValue) " +  seen.has(uniqueValue))
+    // Logger.log("seen " + Array.from(seen).join(", "))
+    // Logger.log("uniqueValue " + uniqueValue)
+    // Logger.log("seen.has(uniqueValue) " +  seen.has(uniqueValue))
 
     if (uniqueColumn && seen.has(uniqueValue)) {
-      Logger.log(`Skipping duplicate for ${uniqueColumnName}: ${uniqueValue}`);
+      // Logger.log(`Skipping duplicate for ${uniqueColumnName}: ${uniqueValue}`);
       continue;
     }
     seen.add(uniqueValue);
@@ -74,32 +83,31 @@ function sendMailMerge(subjectQuery, recipientsColumn, filterValue = false, uniq
     for (let j = 0; j < headers.length; j++) {
       const header = headers[j];
       const value = row[j];
-      if (header.toLowerCase() === recipientsColumn.toLowerCase()) recipient = value;
+      if (header.toLowerCase() === recipientsColumn.toLowerCase())
+        recipient = value;
 
       const placeholder = new RegExp(`{{\\s*${header}\\s*}}`, "g");
       emailBody = emailBody.replace(placeholder, value);
       emailSubject = emailSubject.replace(placeholder, value);
     }
 
-
-
     if (recipient) {
-      Logger.log("pretentding to create draft for " + recipient)
-    // Logger.log("Creating draft for: " + recipient);
-    // Logger.log("Subject: " + emailSubject);
-    //   GmailApp.createDraft(recipient, emailSubject, "", {
-    //     htmlBody: emailBody
-    //   });
+      Logger.log(i + ": pretentding to create draft for " + recipient);
+      // Logger.log("Subject: " + emailSubject);
+      // Logger.log(i + ": Creating draft for: " + recipient);
+      // GmailApp.createDraft(recipient, emailSubject, "", {
+      //   htmlBody: emailBody
+      // });
     } else {
-      Logger.log("no recipient: " + row[i])
+      Logger.log(i + ": skipping, no recipient: " + row[i]);
     }
   }
 }
 
 function testSendMailMerge() {
-  // sendMailMerge("Thank you for leading a CCP Group", "GL Email", false, true)
   // sendMailMerge("Thank you for mentoring a New", "Mentor Email", "New");
+  // sendMailMerge("Thank you for leading a CCP Group", "GL Email", false, true)
   // sendMailMerge("Thank you for mentoring an Ongoing", "Mentor Email", "Ongoing");
   // sendMailMerge("Welcome back", "Email", "Ongoing");
-  sendMailMerge("Welcome to the Fellowship", "Email", "New");
+  // sendMailMerge("Welcome to the Fellowship", "Email", "New");
 }
